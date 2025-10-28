@@ -16,7 +16,7 @@ class WelcomeWindow(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        loadUi("welcome_window.ui", self)
+        loadUi("ui/welcome_window.ui", self)
         self.connect_signals()
 
     def connect_signals(self):
@@ -35,7 +35,7 @@ class LoginWindow(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        loadUi("login_window.ui", self)
+        loadUi("ui/login_window.ui", self)
         self.connect_signals()
 
     def connect_signals(self):
@@ -69,7 +69,7 @@ class RegisterWindow(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        loadUi("register_window.ui", self)
+        loadUi("ui/register_window.ui", self)
         self.connect_signals()
 
     def connect_signals(self):
@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        loadUi("main_window.ui", self)
+        loadUi("ui/main_window.ui", self)
         self.init_windows()
 
     def init_windows(self):
@@ -208,7 +208,7 @@ def main():
     app = QApplication(sys.argv)
 
     # Загружаем QSS-файл со стилем
-    style = load_stylesheet("ConsoleStyle.qss")
+    style = load_stylesheet("styles/ConsoleStyle.qss")
     app.setStyleSheet(style)
 
     window = MainWindow()
