@@ -1,4 +1,10 @@
+# это костыль чтобы модули на этапе разработки нормально импортировались
+import os
 import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+
 import re
 from PyQt6.QtWidgets import (
     QApplication,
@@ -9,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.uic import loadUi
+from smart_todo_list.database import Database
 
 
 class WelcomeWindow(QWidget):
@@ -32,9 +39,10 @@ class WelcomeWindow(QWidget):
 
 class LoginWindow(QWidget):
 
-    def __init__(self, stacked_widget):
+    def __init__(self, stacked_widget, db):
         super().__init__()
         self.stacked_widget = stacked_widget
+        self.db = db
         loadUi("ui/login_window.ui", self)
         self.connect_signals()
 
@@ -51,9 +59,13 @@ class LoginWindow(QWidget):
             return
 
         # Здесь должна быть реальная проверка логина/пароля
-        QMessageBox.information(self, "Успех", f"Добро пожаловать, {login}!")
-        self.clear_fields()
-        self.go_back()
+
+        if self.db.verify_user(login, password):
+            QMessageBox.information(self, "Успех", f"Добро пожаловать, {login}!")
+            self.clear_fields()
+            self.go_back()
+        else:
+            QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль.")
 
     def go_back(self):
         self.clear_fields()
@@ -66,9 +78,10 @@ class LoginWindow(QWidget):
 
 class RegisterWindow(QWidget):
 
-    def __init__(self, stacked_widget):
+    def __init__(self, stacked_widget, db):
         super().__init__()
         self.stacked_widget = stacked_widget
+        self.db = db
         loadUi("ui/register_window.ui", self)
         self.connect_signals()
 
@@ -178,17 +191,19 @@ class RegisterWindow(QWidget):
 class MainWindow(QMainWindow):
     """Главное окно приложения со StackedWidget"""
 
-    def __init__(self):
+    def __init__(self, db):
         super().__init__()
         loadUi("ui/main_window.ui", self)
+        self.db = db
         self.init_windows()
 
     def init_windows(self):
         """Инициализация и добавление окон в stacked widget"""
+
         # Создаем окна
         self.welcome_window = WelcomeWindow(self.stackedWidget)
-        self.login_window = LoginWindow(self.stackedWidget)
-        self.register_window = RegisterWindow(self.stackedWidget)
+        self.login_window = LoginWindow(self.stackedWidget, self.db)
+        self.register_window = RegisterWindow(self.stackedWidget, self.db)
 
         # Добавляем окна в stacked widget
         self.stackedWidget.addWidget(self.welcome_window)
@@ -208,12 +223,17 @@ def main():
     app = QApplication(sys.argv)
 
     # Загружаем QSS-файл со стилем
+
     style = load_stylesheet("styles/ConsoleStyle.qss")
     app.setStyleSheet(style)
 
-    window = MainWindow()
-    window.show()
+    # Создаем объект базы данных
+    db = Database()
 
+    # Создаем главное окно и передаем объект базы
+    window = MainWindow(db)
+
+    window.show()
     sys.exit(app.exec())
 
 
