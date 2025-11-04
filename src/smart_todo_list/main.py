@@ -12,8 +12,12 @@ from PyQt6.QtWidgets import (
     QWidget,
     QMessageBox,
     QStackedWidget,
+    QVBoxLayout,
+    QTableWidget,
+    QTableWidgetItem,
+    QPushButton,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.uic import loadUi
 from smart_todo_list.database import Database
 
@@ -39,6 +43,8 @@ class WelcomeWindow(QWidget):
 
 class LoginWindow(QWidget):
 
+    login_success = pyqtSignal(int)  # сигнал с user_id
+
     def __init__(self, stacked_widget, db):
         super().__init__()
         self.stacked_widget = stacked_widget
@@ -58,12 +64,16 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Ошибка", "Заполните все поля!")
             return
 
-        # Здесь должна быть реальная проверка логина/пароля
-
         if self.db.verify_user(login, password):
+            user_id = self.db.get_user_id(login)
+            if user_id is None:
+                QMessageBox.warning(self, "Ошибка", "Пользователь не найден.")
+                return
             QMessageBox.information(self, "Успех", f"Добро пожаловать, {login}!")
             self.clear_fields()
-            self.go_back()
+            self.login_success.emit(
+                user_id
+            )  # отправляем сигнал о успешном входе с user_id
         else:
             QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль.")
 
@@ -193,6 +203,38 @@ class RegisterWindow(QWidget):
         self.passwordStrengthLabel.setText("")
 
 
+class TasksWindow(QWidget):
+    def __init__(self, stacked_widget, db, user_id):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.db = db
+        self.user_id = user_id
+        loadUi("ui/tasks_window.ui", self)  # загружаем интерфейс из .ui файла
+
+        self.setWindowTitle("Список задач")
+        self.connect_signals()
+        self.load_tasks()
+
+    def connect_signals(self):
+        self.refreshButton.clicked.connect(self.load_tasks)  # кнопка обновления списка
+
+    def load_tasks(self):
+        self.taskTable.setRowCount(0)  # очистка таблицы
+        if not self.db:
+            return
+
+        # Предполагается, что get_tasks возвращает список кортежей (title, description, is_done)
+        tasks = self.db.get_tasks(self.user_id)
+
+        for task in tasks:
+            row = self.taskTable.rowCount()
+            self.taskTable.insertRow(row)
+            self.taskTable.setItem(row, 0, QTableWidgetItem(task[0]))
+            self.taskTable.setItem(row, 1, QTableWidgetItem(task[1]))
+            status_text = "Выполнено" if task[2] else "Не выполнено"
+            self.taskTable.setItem(row, 2, QTableWidgetItem(status_text))
+
+
 class MainWindow(QMainWindow):
     """Главное окно приложения со StackedWidget"""
 
@@ -200,23 +242,44 @@ class MainWindow(QMainWindow):
         super().__init__()
         loadUi("ui/main_window.ui", self)
         self.db = db
+        self.current_user_id = None  # здесь будем хранить вошедшего пользователя
+        self.tasks_window = (
+            None  # окно списка задач создаётся позже, когда появится user_id
+        )
         self.init_windows()
 
     def init_windows(self):
         """Инициализация и добавление окон в stacked widget"""
 
-        # Создаем окна
+        # Создаем окна, кроме tasks_window, т.к. user_id ещё неизвестен
         self.welcome_window = WelcomeWindow(self.stackedWidget)
         self.login_window = LoginWindow(self.stackedWidget, self.db)
         self.register_window = RegisterWindow(self.stackedWidget, self.db)
 
-        # Добавляем окна в stacked widget
+        # Подписываемся на сигнал успешного входа из окна логина
+        self.login_window.login_success.connect(self.on_login_success)
+
+        # Добавляем окна, которые создали
         self.stackedWidget.addWidget(self.welcome_window)
         self.stackedWidget.addWidget(self.login_window)
         self.stackedWidget.addWidget(self.register_window)
 
-        # Устанавливаем начальное окно
+        # Показываем стартовое окно
         self.stackedWidget.setCurrentIndex(0)
+
+    def on_login_success(self, user_id):
+        """Вызывается при успешном входе пользователя"""
+        self.current_user_id = user_id
+        if self.tasks_window is None:
+            # Создаём окно задач с user_id, теперь можно загрузить задачи конкретного пользователя
+            self.tasks_window = TasksWindow(self.stackedWidget, self.db, user_id)
+            self.stackedWidget.addWidget(self.tasks_window)
+        else:
+            # Если окно задач уже есть, просто обновляем user_id и загружаем задачи
+            self.tasks_window.user_id = user_id
+            self.tasks_window.load_tasks()
+        # Показываем окно задач
+        self.stackedWidget.setCurrentWidget(self.tasks_window)
 
 
 def load_stylesheet(filename):

@@ -65,3 +65,53 @@ class Database:
         finally:
             cursor.close()
             conn.close()
+
+    def get_tasks(self, user_id):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT title, description, is_done FROM tasks WHERE user_id = ?",
+                (user_id,),
+            )
+            tasks = cursor.fetchall()
+            return tasks
+        finally:
+            cursor.close()
+            conn.close()
+
+    def add_task(self, user_id, title, description):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)",
+                (user_id, title, description),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def update_task_status(self, task_id, is_done):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE tasks SET is_done = ? WHERE id = ?", (is_done, task_id)
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_user_id(self, login):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT id FROM users WHERE login = ?", (login,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+        finally:
+            cursor.close()
+            conn.close()
