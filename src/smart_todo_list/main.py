@@ -168,11 +168,16 @@ class RegisterWindow(QWidget):
             return
 
         # Здесь должна быть реальная логика регистрации
-        QMessageBox.information(
-            self, "Успех", f"Пользователь {login} успешно зарегистрирован!"
-        )
-        self.clear_fields()
-        self.go_back()
+        # Попытка зарегистрировать пользователя через метод БД
+        try:
+            self.db.register_user(login, email, password)
+            QMessageBox.information(
+                self, "Успех", f"Пользователь {login} успешно зарегистрирован!"
+            )
+            self.clear_fields()
+            self.go_back()
+        except RuntimeError as e:
+            QMessageBox.warning(self, "Ошибка регистрации", str(e))
 
     def go_back(self):
         """Возврат к приветственному окну"""

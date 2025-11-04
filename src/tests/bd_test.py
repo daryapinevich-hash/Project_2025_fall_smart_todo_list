@@ -23,11 +23,16 @@ def test_db_connection():
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='users';"
         )
-        table = cursor.fetchone()
-        if table:
-            print("Таблица 'users' существует")
+        tables = cursor.fetchall()
+        if tables:
+            print("Таблицы в базе:")
+            for table_name_tuple in tables:
+                table_name = table_name_tuple[0]
+                cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+                count = cursor.fetchone()[0]
+                print(f"  {table_name} (строк: {count})")
         else:
-            print("Таблица 'users' отсутствует")
+            print("В базе данных нет таблиц")
 
         cursor.close()
         conn.close()
