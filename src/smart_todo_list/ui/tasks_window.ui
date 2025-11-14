@@ -10,28 +10,43 @@
     <height>400</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Список задач</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QCheckBox" name="hideCompletedCheckBox">
+     <property name="text">
+      <string>Скрыть выполненные</string>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QTableWidget" name="taskTable">
      <property name="columnCount">
       <number>3</number>
      </property>
-     <property name="horizontalHeaderLabels">
-      <stringlist>
-       <string>Название</string>
-       <string>Описание</string>
-       <string>Статус</string>
-      </stringlist>
+     <property name="rowCount">
+      <number>0</number>
      </property>
+     <column>
+      <property name="text">
+       <string>Название</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Описание</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Статус</string>
+      </property>
+     </column>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="refreshButton">
+    <widget class="QPushButton" name="pushButtonAddTask">
      <property name="text">
-      <string>Обновить список</string>
+      <string>Добавить задачу</string>
      </property>
     </widget>
    </item>

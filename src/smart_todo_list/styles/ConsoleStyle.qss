@@ -183,3 +183,25 @@ QMenu::item:selected {
 	border-color: rgb(58, 58, 58);
 	border-style: inset;
 }
+
+
+/* стиль  шапок таблицы*/
+QHeaderView::section:horizontal {
+    background-color: rgb(58, 58, 58);
+    color: rgb(240, 240, 240);
+    font-weight: bold;
+    border: 1px solid rgb(42, 42, 42);
+}
+
+QHeaderView::section:vertical {
+    background-color: rgb(58, 58, 58);
+    color: rgb(240, 240, 240);
+    font-weight: bold;
+    border: 1px solid rgb(42, 42, 42);
+}
+
+QTableCornerButton::section {
+	background-color: rgb(58, 58, 58); /* такой же фон, как у заголовков */
+	border: 1px solid rgb(42, 42, 42);
+}
+

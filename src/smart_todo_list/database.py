@@ -71,7 +71,7 @@ class Database:
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "SELECT title, description, is_done FROM tasks WHERE user_id = ?",
+                "SELECT id, title, description, is_done FROM tasks WHERE user_id = ?",
                 (user_id,),
             )
             tasks = cursor.fetchall()

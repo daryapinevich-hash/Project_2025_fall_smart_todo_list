@@ -17,6 +17,8 @@ from PyQt6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QPushButton,
+    QCheckBox,
+    QInputDialog,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.uic import loadUi
@@ -213,30 +215,106 @@ class TasksWindow(QWidget):
         self.stacked_widget = stacked_widget
         self.db = db
         self.user_id = user_id
-        loadUi("ui/tasks_window.ui", self)  # загружаем интерфейс из .ui файла
+        loadUi("ui/tasks_window.ui", self)
 
-        self.setWindowTitle("Список задач")
-        self.connect_signals()
+        self.tasks = []
+
+        # Используем чекбокс из ui
+        self.hideCompletedCheckBox.stateChanged.connect(self.load_tasks)
+        self.taskTable.cellClicked.connect(self.on_cell_clicked)
+        self.taskTable.cellChanged.connect(self.on_cell_changed)
+
+        # Кнопка из ui
+        self.pushButtonAddTask.clicked.connect(self.add_task_dialog)
+
         self.load_tasks()
 
-    def connect_signals(self):
-        self.refreshButton.clicked.connect(self.load_tasks)  # кнопка обновления списка
-
     def load_tasks(self):
-        self.taskTable.setRowCount(0)  # очистка таблицы
+        self.taskTable.blockSignals(
+            True
+        )  # чтобы не триггерить cellChanged при обновлении
+        self.taskTable.setRowCount(0)
         if not self.db:
+            self.taskTable.blockSignals(False)
             return
 
-        # Предполагается, что get_tasks возвращает список кортежей (title, description, is_done)
-        tasks = self.db.get_tasks(self.user_id)
+        self.tasks = self.db.get_tasks(self.user_id)
+        hide_completed = self.hideCompletedCheckBox.isChecked()
 
-        for task in tasks:
+        for task in self.tasks:
+            task_id, title, description, is_done = task
+            if hide_completed and is_done:
+                continue
+
             row = self.taskTable.rowCount()
             self.taskTable.insertRow(row)
-            self.taskTable.setItem(row, 0, QTableWidgetItem(task[0]))
-            self.taskTable.setItem(row, 1, QTableWidgetItem(task[1]))
-            status_text = "Выполнено" if task[2] else "Не выполнено"
-            self.taskTable.setItem(row, 2, QTableWidgetItem(status_text))
+
+            title_item = QTableWidgetItem(title)
+            description_item = QTableWidgetItem(description)
+            if is_done:
+                font = title_item.font()
+                font.setStrikeOut(True)
+                title_item.setFont(font)
+                font_desc = description_item.font()
+                font_desc.setStrikeOut(True)
+                description_item.setFont(font_desc)
+            self.taskTable.setItem(row, 0, title_item)
+            self.taskTable.setItem(row, 1, description_item)
+
+            status_item = QTableWidgetItem()
+            status_item.setFlags(
+                status_item.flags()
+                | Qt.ItemFlag.ItemIsUserCheckable
+                | Qt.ItemFlag.ItemIsEnabled
+            )
+            status_item.setCheckState(
+                Qt.CheckState.Checked if is_done else Qt.CheckState.Unchecked
+            )
+            self.taskTable.setItem(row, 2, status_item)
+
+        self.taskTable.blockSignals(False)
+
+    def on_cell_clicked(self, row, column):
+        if column == 2:  # Клик по колонке со статусом
+            item = self.taskTable.item(row, column)
+            if item is None:
+                return
+            current_state = item.checkState()
+            new_state = (
+                Qt.CheckState.Unchecked
+                if current_state == Qt.CheckState.Checked
+                else Qt.CheckState.Checked
+            )
+            item.setCheckState(new_state)
+            # Обновление статуса в базе и UI вызовется через on_cell_changed
+
+    def on_cell_changed(self, row, column):
+        if column == 2:
+            item = self.taskTable.item(row, column)
+            if item is None:
+                return
+            is_done = item.checkState() == Qt.CheckState.Checked
+            task_id = self.tasks[row][0]
+            self.db.update_task_status(task_id, is_done)
+            self.load_tasks()
+
+    def add_task_dialog(self):
+        title, ok = QInputDialog.getText(self, "Добавить задачу", "Название задачи:")
+        if not ok or not title.strip():
+            return
+
+        description, ok = QInputDialog.getText(
+            self, "Добавить задачу", "Описание задачи (необязательно):"
+        )
+        if not ok:
+            description = ""
+
+        try:
+            self.db.add_task(self.user_id, title.strip(), description.strip())
+            QMessageBox.information(self, "Успех", "Задача успешно добавлена")
+            self.load_tasks()
+        except Exception as e:
+            QMessageBox.warning(self, "Ошибка", f"Не удалось добавить задачу:\n{e}")
 
 
 class MainWindow(QMainWindow):
