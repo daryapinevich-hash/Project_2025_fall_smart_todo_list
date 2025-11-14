@@ -14,7 +14,7 @@
    <item>
     <widget class="QLabel" name="titleLabel">
      <property name="text">
-      <string>Список дел 0.0</string>
+      <string>Список дел v1.0</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>

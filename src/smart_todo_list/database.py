@@ -105,6 +105,31 @@ class Database:
             cursor.close()
             conn.close()
 
+    def update_task_title(self, task_id, new_title):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE tasks SET title = ? WHERE id = ?", (new_title, task_id)
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def update_task_description(self, task_id, new_description):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "UPDATE tasks SET description = ? WHERE id = ?",
+                (new_description, task_id),
+            )
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
     def get_user_id(self, login):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

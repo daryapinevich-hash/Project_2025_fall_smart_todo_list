@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QCheckBox,
     QInputDialog,
+    QSizePolicy,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.uic import loadUi
@@ -290,6 +291,7 @@ class TasksWindow(QWidget):
 
     def on_cell_changed(self, row, column):
         if column == 2:
+            # Обработка изменения статуса по чекбоксу
             item = self.taskTable.item(row, column)
             if item is None:
                 return
@@ -297,6 +299,17 @@ class TasksWindow(QWidget):
             task_id = self.tasks[row][0]
             self.db.update_task_status(task_id, is_done)
             self.load_tasks()
+        elif column in (0, 1):
+            # Обработка изменения названия или описания
+            item = self.taskTable.item(row, column)
+            if item is None:
+                return
+            new_text = item.text()
+            task_id = self.tasks[row][0]
+            if column == 0:
+                self.db.update_task_title(task_id, new_text)
+            else:
+                self.db.update_task_description(task_id, new_text)
 
     def add_task_dialog(self):
         title, ok = QInputDialog.getText(self, "Добавить задачу", "Название задачи:")
@@ -328,6 +341,14 @@ class MainWindow(QMainWindow):
         self.tasks_window = (
             None  # окно списка задач создаётся позже, когда появится user_id
         )
+
+        # явно задать размер главного окна и дать возможность stackedWidget и страницам занимать динамически подходящий размер
+        self.setMinimumSize(300, 400)
+        self.stackedWidget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        self.stackedWidget.currentChanged.connect(self.on_page_changed)
+
         self.init_windows()
 
     def init_windows(self):
@@ -362,6 +383,12 @@ class MainWindow(QMainWindow):
             self.tasks_window.load_tasks()
         # Показываем окно задач
         self.stackedWidget.setCurrentWidget(self.tasks_window)
+
+    def on_page_changed(self, index):
+        widget = self.stackedWidget.widget(index)
+        if widget:
+            size = widget.sizeHint()
+            self.resize(size)
 
 
 def load_stylesheet(filename):
