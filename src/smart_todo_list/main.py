@@ -2,11 +2,11 @@
 import os
 import sys
 
-# это костыль чтобы модули на этапе разработки нормально импортировались
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import re
 from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.uic import loadUi
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -21,12 +21,8 @@ from PyQt6.QtWidgets import (
     QInputDialog,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.uic import loadUi
-from PyQt6.QtGui import QIcon
 
-
-from smart_todo_list.database import Database
+from database import Database
 
 
 class WelcomeWindow(QWidget):
